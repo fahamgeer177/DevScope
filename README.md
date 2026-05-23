@@ -48,7 +48,7 @@
 ### 1. Setup Environment
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/devscope.git
+git clone https://github.com/fahamgeer177/DevScope.git
 cd devscope
 
 # Install dependencies
