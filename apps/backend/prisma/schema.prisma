@@ -1,0 +1,96 @@
+// ============================================
+// DevScope — Prisma Database Schema
+// ============================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+  
+}
+
+// ── User (app user, NOT GitHub user) ────────────────────────────
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  username     String    @unique
+  passwordHash String    @map("password_hash")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  sessions  Session[]
+  searches  Search[]
+
+  @@map("users")
+}
+
+// ── Session (JWT refresh tokens) ────────────────────────────────
+model Session {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  refreshToken String   @unique @map("refresh_token")
+  userAgent    String?  @map("user_agent")
+  ipAddress    String?  @map("ip_address")
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+// ── Search (user search history) ────────────────────────────────
+model Search {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  githubUsername  String   @map("github_username")
+  resultSnapshot String?    @map("result_snapshot")
+  searchedAt     DateTime @default(now()) @map("searched_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, searchedAt(sort: Desc)])
+  @@index([githubUsername])
+  @@map("searches")
+}
+
+// ── CachedProfile (DB-level cache for GitHub analytics) ─────────
+model CachedProfile {
+  id             String   @id @default(uuid())
+  githubUsername  String   @unique @map("github_username")
+  profileData    String     @map("profile_data")
+  reposData      String?    @map("repos_data")
+  languagesData  String?    @map("languages_data")
+  analyticsData  String?    @map("analytics_data")
+  expiresAt      DateTime @map("expires_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@index([githubUsername])
+  @@index([expiresAt])
+  @@map("cached_profiles")
+}
+
+// ── Analytics (persistent analytics snapshots) ──────────────────
+model Analytics {
+  id              String   @id @default(uuid())
+  githubUsername   String   @map("github_username")
+  overallScore    Float    @map("overall_score")
+  activityScore   Float    @map("activity_score")
+  engagementScore Float    @map("engagement_score")
+  consistencyScore Float   @map("consistency_score")
+  qualityScore    Float    @map("quality_score")
+  languagesString   String     @map("languages_String")
+  skillsString      String     @map("skills_String")
+  summary         String
+  fullAnalytics   String     @map("full_analytics")
+  generatedAt     DateTime @default(now()) @map("generated_at")
+
+  @@index([githubUsername, generatedAt(sort: Desc)])
+  @@map("analytics")
+}
